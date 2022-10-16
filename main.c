@@ -315,6 +315,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     }
 
     float clientBitCoords[2];
+    float serverBitCoords[2];
     float puckCoords[2];
     while (!bQuit)
     {
@@ -344,6 +345,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 puck.x = puckCoords[0];
                 puck.y = puckCoords[1];
 
+                memset(&serverBitCoords, 0, sizeof(serverBitCoords));
+                recv(sock, serverBitCoords, sizeof(serverBitCoords), 0);
+                userBit.x = serverBitCoords[0];
+                userBit.y = serverBitCoords[1];
+
             }
             else{
                 
@@ -356,6 +362,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 puckCoords[1] = puck.y;
                 send(clientSocket, puckCoords, sizeof(puckCoords), 0);
                 MovePuck(&puck);
+
+                serverBitCoords[0] = userBit.x;
+                serverBitCoords[1] = userBit.y;
+                send(clientSocket, serverBitCoords, sizeof(serverBitCoords), 0);
+
             }
 
 
