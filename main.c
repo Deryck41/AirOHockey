@@ -356,8 +356,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 memset(&clientBitCoords, 0, sizeof(clientBitCoords));
 
                 recv(clientSocket, clientBitCoords, sizeof(clientBitCoords), 0);
-                user2Bit.x = clientBitCoords[0];
-                user2Bit.y = clientBitCoords[1];
+                MoveBitTo(&user2Bit, clientBitCoords[0], clientBitCoords[1]);
                 puckCoords[0] = puck.x;
                 puckCoords[1] = puck.y;
                 send(clientSocket, puckCoords, sizeof(puckCoords), 0);
@@ -385,7 +384,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
             SwapBuffers(hDC);
 
-            Sleep (23);
+            Sleep (16);
         }
     }
 
