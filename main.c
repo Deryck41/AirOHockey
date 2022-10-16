@@ -390,7 +390,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
             SwapBuffers(hDC);
 
-            Sleep (16);
+            Sleep (23);
         }
     }
 
