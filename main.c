@@ -314,9 +314,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
         roleBitPointer = &userBit;
     }
 
-    float clientBitCoords[2];
-    float serverBitCoords[2];
-    float puckCoords[2];
+    // float clientBitCoords[2];
+    // float serverBitCoords[2];
+    // float puckCoords[2];
+    float clientData[2];
+    float serverData[4];
     while (!bQuit)
     {
         /* check for messages */
@@ -341,39 +343,36 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 ScreenToClient(hwnd, &userPoint);
                 user2Bit.x = userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
                 user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
-                clientBitCoords[0] = user2Bit.x;
-                clientBitCoords[1] = user2Bit.y;
-                send(sock, clientBitCoords, sizeof(clientBitCoords), 0);
-                memset(&puckCoords, 0, sizeof(puckCoords));
-                recv(sock, puckCoords, sizeof(puckCoords), 0);
-                puck.x = puckCoords[0];
-                puck.y = puckCoords[1];
-
-                memset(&serverBitCoords, 0, sizeof(serverBitCoords));
-                recv(sock, serverBitCoords, sizeof(serverBitCoords), 0);
-                userBit.x = serverBitCoords[0];
-                userBit.y = serverBitCoords[1];
+                clientData[0] = user2Bit.x;
+                clientData[1] = user2Bit.y;
+                send(sock, clientData, sizeof(clientData), 0);
+                memset(&serverData, 0, sizeof(serverData));
+                recv(sock, serverData, sizeof(serverData), 0);
+                puck.x = serverData[0];
+                puck.y = serverData[1];
+                userBit.x = serverData[2];
+                userBit.y = serverData[3];
 
             }
             else{
                 
-                memset(&clientBitCoords, 0, sizeof(clientBitCoords));
+                memset(&clientData, 0, sizeof(clientData));
 
-                recv(clientSocket, clientBitCoords, sizeof(clientBitCoords), 0);
-                MoveBitTo(&user2Bit, clientBitCoords[0], clientBitCoords[1]);
-                puckCoords[0] = puck.x;
-                puckCoords[1] = puck.y;
-                send(clientSocket, puckCoords, sizeof(puckCoords), 0);
-                MovePuck(&puck);
-
-                serverBitCoords[0] = userBit.x;
-                serverBitCoords[1] = userBit.y;
+                recv(clientSocket, clientData, sizeof(clientData), 0);
+                MoveBitTo(&user2Bit, clientData[0], clientData[1]);
                 GetCursorPos(&userPoint);
                 ScreenToClient(hwnd, &userPoint);
                 MoveBitTo(&userBit,
                 userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
               2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
-                send(clientSocket, serverBitCoords, sizeof(serverBitCoords), 0);
+                serverData[0] = puck.x;
+                serverData[1] = puck.y;
+                
+
+                serverData[2] = userBit.x;
+                serverData[3] = userBit.y;
+                send(clientSocket, serverData, sizeof(serverData), 0);
+                MovePuck(&puck);
 
             }
 
