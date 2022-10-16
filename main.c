@@ -337,6 +337,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
         {
 
             if (role == CLIENT){
+                GetCursorPos(&userPoint);
+                ScreenToClient(hwnd, &userPoint);
+                user2Bit.x = userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+                user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
                 clientBitCoords[0] = user2Bit.x;
                 clientBitCoords[1] = user2Bit.y;
                 send(sock, clientBitCoords, sizeof(clientBitCoords), 0);
@@ -364,6 +368,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 serverBitCoords[0] = userBit.x;
                 serverBitCoords[1] = userBit.y;
+                GetCursorPos(&userPoint);
+                ScreenToClient(hwnd, &userPoint);
+                MoveBitTo(&userBit,
+                userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+              2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
                 send(clientSocket, serverBitCoords, sizeof(serverBitCoords), 0);
 
             }
@@ -371,14 +380,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 
 
-            GetCursorPos(&userPoint);
-            ScreenToClient(hwnd, &userPoint);
+            
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            MoveBitTo(roleBitPointer,
-             userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
-              2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
+            
 
             DrawFrame();
 
