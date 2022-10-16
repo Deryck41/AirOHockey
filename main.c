@@ -313,7 +313,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
     else{
         roleBitPointer = &userBit;
     }
-    /* program main loop */
+
+    float clientBitCoords[2];
+    float puckCoords[2];
     while (!bQuit)
     {
         /* check for messages */
@@ -334,18 +336,26 @@ int WINAPI WinMain(HINSTANCE hInstance,
         {
 
             if (role == CLIENT){
-                float clientBitCoords[] = {user2Bit.x, user2Bit.y};
+                clientBitCoords[0] = user2Bit.x;
+                clientBitCoords[1] = user2Bit.y;
                 send(sock, clientBitCoords, sizeof(clientBitCoords), 0);
-                printf("send");
+                memset(&puckCoords, 0, sizeof(puckCoords));
+                recv(sock, puckCoords, sizeof(puckCoords), 0);
+                puck.x = puckCoords[0];
+                puck.y = puckCoords[1];
+
             }
             else{
-                float clientBitCoords[2];
+                
                 memset(&clientBitCoords, 0, sizeof(clientBitCoords));
 
                 recv(clientSocket, clientBitCoords, sizeof(clientBitCoords), 0);
-                printf("receive");
                 user2Bit.x = clientBitCoords[0];
                 user2Bit.y = clientBitCoords[1];
+                puckCoords[0] = puck.x;
+                puckCoords[1] = puck.y;
+                send(clientSocket, puckCoords, sizeof(puckCoords), 0);
+                MovePuck(&puck);
             }
 
 
@@ -355,7 +365,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             ScreenToClient(hwnd, &userPoint);
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-            MovePuck(&puck);
+            
             MoveBitTo(roleBitPointer,
              userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
               2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
