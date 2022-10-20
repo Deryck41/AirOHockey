@@ -340,8 +340,8 @@ void InitBit(Bit *obj, float xObj, float yObj, float radiusObj){
 void GameInit(){
     glGenTextures(2, textures);
 
-    InitTexture(1, "resources/bit.png");
-    InitTexture(2, "resources/table.png");
+    InitTexture(1, "bit.png");
+    InitTexture(2, "table.png");
     InitPuck(&puck, 0, 0, 0, 0, 0.12);
     InitBit(&userBit, -0.4, 0, 0.14);
     InitBit(&user2Bit, 0.4, 0, 0.14);
