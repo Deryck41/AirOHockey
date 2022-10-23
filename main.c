@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <gl/gl.h>
+#include <pthread.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -340,9 +341,9 @@ void InitBit(Bit *obj, float xObj, float yObj, float radiusObj){
 void GameInit(){
     glGenTextures(2, textures);
 
-    InitTexture(1, "bit.png");
-    InitTexture(2, "table.png");
-    InitPuck(&puck, 0, 0, 0, 0, 0.12);
+    InitTexture(1, "resources/bit.png");
+    InitTexture(2, "resources/table.png");
+    InitPuck(&puck, 0, 0, 0, 0, 0.11);
     InitBit(&userBit, -0.4, 0, 0.14);
     InitBit(&user2Bit, 0.4, 0, 0.14);
 }
@@ -475,6 +476,55 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     float clientData[2];
     float serverData[4];
+
+    void *networkBroadcast(){
+        while (TRUE){
+            if (role == CLIENT){
+                    clientData[0] = user2Bit.x;
+                    clientData[1] = user2Bit.y;
+                    send(sock, clientData, sizeof(clientData), 0);
+                    GetCursorPos(&userPoint);
+                    ScreenToClient(hwnd, &userPoint);
+                    user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
+                    user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
+                    memset(&serverData, 0, sizeof(serverData));
+                    recv(sock, serverData, sizeof(serverData), 0);
+                    puck.x = serverData[0];
+                    puck.y = serverData[1];
+                    userBit.x = serverData[2];
+                    userBit.y = serverData[3];
+
+                }
+                else{
+                    
+                    memset(&clientData, 0, sizeof(clientData));
+                    MoveBitTo(&userBit,
+                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+                  2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
+                    recv(clientSocket, clientData, sizeof(clientData), 0);
+                    MoveBitTo(&user2Bit, clientData[0], clientData[1]);
+                    GetCursorPos(&userPoint);
+                    ScreenToClient(hwnd, &userPoint);
+                    
+                    serverData[0] = puck.x;
+                    serverData[1] = puck.y;
+                    
+
+                    serverData[2] = userBit.x;
+                    serverData[3] = userBit.y;
+                    send(clientSocket, serverData, sizeof(serverData), 0);
+                    MovePuck(&puck);
+                }
+        }
+    }
+
+
+    pthread_t thread;
+    int statusAddr;
+    int status = pthread_create(&thread, NULL, networkBroadcast, NULL);
+
+    //pthread_join(thread, (void**)&statusAddr);
+
     while (!bQuit)
     {
         /* check for messages */
@@ -493,47 +543,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
         }
         else
         {
-
-            ReflexBit(roleBitPointer, role);
-            if (role == CLIENT){
-                GetCursorPos(&userPoint);
-                ScreenToClient(hwnd, &userPoint);
-                user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
-                user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
-                clientData[0] = user2Bit.x;
-                clientData[1] = user2Bit.y;
-                send(sock, clientData, sizeof(clientData), 0);
-                memset(&serverData, 0, sizeof(serverData));
-                recv(sock, serverData, sizeof(serverData), 0);
-                puck.x = serverData[0];
-                puck.y = serverData[1];
-                userBit.x = serverData[2];
-                userBit.y = serverData[3];
-
-            }
-            else{
-                
-                memset(&clientData, 0, sizeof(clientData));
-
-                recv(clientSocket, clientData, sizeof(clientData), 0);
-                MoveBitTo(&user2Bit, clientData[0], clientData[1]);
-                GetCursorPos(&userPoint);
-                ScreenToClient(hwnd, &userPoint);
-                MoveBitTo(&userBit,
-                userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
-              2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
-                serverData[0] = puck.x;
-                serverData[1] = puck.y;
-                
-
-                serverData[2] = userBit.x;
-                serverData[3] = userBit.y;
-                send(clientSocket, serverData, sizeof(serverData), 0);
-                MovePuck(&puck);
-
-
-            }
-
 
 
             
