@@ -482,38 +482,30 @@ int WINAPI WinMain(HINSTANCE hInstance,
             if (role == CLIENT){
                     clientData[0] = user2Bit.x;
                     clientData[1] = user2Bit.y;
+
                     send(sock, clientData, sizeof(clientData), 0);
-                    GetCursorPos(&userPoint);
-                    ScreenToClient(hwnd, &userPoint);
-                    user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
-                    user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
+
                     memset(&serverData, 0, sizeof(serverData));
                     recv(sock, serverData, sizeof(serverData), 0);
+                    
                     puck.x = serverData[0];
                     puck.y = serverData[1];
                     userBit.x = serverData[2];
                     userBit.y = serverData[3];
-
                 }
+
                 else{
                     
                     memset(&clientData, 0, sizeof(clientData));
-                    MoveBitTo(&userBit,
-                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
-                  2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
                     recv(clientSocket, clientData, sizeof(clientData), 0);
-                    MoveBitTo(&user2Bit, clientData[0], clientData[1]);
-                    GetCursorPos(&userPoint);
-                    ScreenToClient(hwnd, &userPoint);
-                    
+
+
                     serverData[0] = puck.x;
                     serverData[1] = puck.y;
-                    
-
                     serverData[2] = userBit.x;
                     serverData[3] = userBit.y;
+
                     send(clientSocket, serverData, sizeof(serverData), 0);
-                    MovePuck(&puck);
                 }
         }
     }
@@ -545,7 +537,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
         {
 
 
-            
+            GetCursorPos(&userPoint);
+            ScreenToClient(hwnd, &userPoint);
+
+            if (role == SERVER){
+                MovePuck(&puck);
+                MoveBitTo(&userBit,
+                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+                    2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
+                MoveBitTo(&user2Bit, clientData[0], clientData[1]);
+            }
+            else{
+                user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
+                user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
+            }
             
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
