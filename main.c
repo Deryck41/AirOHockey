@@ -6,8 +6,8 @@
 #include <gl/gl.h>
 #include <pthread.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "physics.h"
+#include "drawing.h"
 
 
 #define WIN_WIDTH 1200
@@ -39,288 +39,6 @@ Bit userBit;
 Bit user2Bit;
 
 
-
-
-
-
-
-
-
-
-
-// Physics
-
-
-
-
-float reflectionFactor = 0.85;
-float frictionFactor = 0.0001;
-
-BOOL Colision(float x1, float y1, float r, float x2, float y2){
-    return pow(x1 - x2, 2) + pow(y1 - y2, 2) < pow(r, 2);
-}
-
-void Repulse(Puck *obj, float x, float y, float speed){
-    float vector = atan2(obj->speedX, obj->speedY);
-    float colosionVector = atan2(obj->x - x, obj->y - y);
-
-    float angleVector = speed == 0 ? M_PI - vector + 2 * colosionVector : colosionVector;
-    speed = speed == 0 ? sqrt(pow(obj->speedX, 2) + pow(obj->speedY, 2)) : speed;
-
-    obj->speedX = sin(angleVector) * speed;
-    obj->speedY = cos(angleVector) * speed;
-}
-
-void ReflexCursor(HWND hwnd, float glX, float glY){
-    POINT cursor;
-
-    cursor.x = (glX + xFactor) * (double) WIN_WIDTH * 2 * xFactor;
-    cursor.y  = (((glY + 1) / 2 - 1) / -1) * (double) WIN_HEIGHT;
-    ClientToScreen(hwnd, &cursor);
-    SetCursorPos(cursor.x,cursor.y);
-}
-
-void ReflexBit(Bit *obj, BOOL role){
-    if (obj->y < -1 + obj->radius)
-        obj->y = -1 + obj->radius;
-
-    if (obj->y > 1 - obj->radius)
-        obj->y = 1 - obj->radius;
-
-    if (role == CLIENT){
-        if (obj->x < obj->radius - xFactor)
-            obj->x = obj->radius - xFactor;
-
-        if (obj->x > 0 - obj->radius)
-            obj->x = 0 - obj->radius;
-    }
-    else{
-        if (obj->x < obj->radius)
-            obj->x = obj->radius;
-
-        if (obj->x > xFactor - obj->radius)
-            obj->x = xFactor - obj->radius;
-    
-    }
-}
-
-void MoveBitTo(Bit *obj, float x, float y){
-    obj->x = x;
-    obj->y = y;
-
-    if (Colision(obj->x, obj->y, obj->radius + puck.radius, puck.x, puck.y)){
-        Repulse(&puck, obj->x, obj->y, 0.09);
-    }
-}
-
-void MovePuck(Puck *obj){
-    obj->x += obj->speedX;
-    obj->y += obj->speedY;
-    //obj->speedY -= gravity;
-    // Reflect(&obj->dy, &obj->y, (obj->y < -1 + obj->radius), obj->radius - 1);
-    if (obj->y < -1 + obj->radius){
-        obj->speedY *= -reflectionFactor;
-        obj->y = -1 + obj->radius;
-    }
-
-    if (obj->y > 1 - obj->radius){
-        obj->speedY *= -reflectionFactor;
-        obj->y = 1 - obj->radius;
-    }
-
-
-    if (obj->x < obj->radius - xFactor){
-        obj->speedX *= -reflectionFactor;
-        obj->x = obj->radius - xFactor;
-    }
-
-    if (obj->x > xFactor - obj->radius){
-        obj->speedX *= -reflectionFactor;
-        obj->x = xFactor - obj->radius;
-    }
-
-    if (obj->speedX > 0)
-        obj->speedX -= frictionFactor;
-
-    if (obj->speedX < 0)
-        obj->speedX += frictionFactor;
-
-    if (obj->speedY > 0)
-        obj->speedY -= frictionFactor;
-
-    if (obj->speedY < 0)
-        obj->speedY += frictionFactor;
-
-    if ((obj->speedY <= frictionFactor && obj->speedY > 0) || (obj->speedY >= frictionFactor && obj->speedY < 0))
-        obj->speedY = 0;
-
-    if ((obj->speedX <= frictionFactor && obj->speedX > 0) || (obj->speedX >= frictionFactor && obj->speedX < 0))
-        obj->speedX = 0;
-
-}
-
-void Reflect(float *speed, float *coord, BOOL condition, float wall){
-    if (!condition)
-        return;
-
-    *speed *= - reflectionFactor;
-    *coord = wall;
-}
-
-
-
-
-
-
-
-
-// Drawing
-
-
-void DrawCircle(int accuracy){
-    float x, y;
-    float da = M_PI * 2.0 / accuracy;
-
-    glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(0, 0);
-
-        for (int i = 0; i <= accuracy; i++){
-            glVertex2f(sin (da * i), cos (da * i));
-        }
-
-    glEnd();
-}
-
-void DrawSprite(unsigned int texture, float vertex[]);
-
-void DrawBit(Bit obj){
-    glPushMatrix();
-        glTranslatef(obj.x, obj.y, 0);
-        glScalef(obj.radius, obj.radius, 1);
-        // glColor3f(0.694,0.843,1);
-        // DrawCircle(70);
-        // glScalef(obj.radius*4.5, obj.radius*4.5, 1);
-        // glColor3f(0,0.165,0.616);
-        // DrawCircle(70);
-        // glColor3f(0,0,0.024);
-        // glScalef(obj.radius*3.5, obj.radius*3.5, 1);
-        // DrawCircle(70);
-        // glColor3f(0.176,0.408,1);
-        // glScalef(obj.radius*3.1, obj.radius*3.1, 1);
-        // DrawCircle(70);
-        float vertex[] = {-1,-1,0, 1,-1,0, 1,1,0, -1,1,0};
-        DrawSprite(1, vertex);
-
-    glPopMatrix();
-}
-
-void DrawPuck(Puck obj){
-    glPushMatrix();
-        glTranslatef(obj.x, obj.y, 0);
-        glScalef(obj.radius, obj.radius, 1);
-        DrawCircle(50);
-    glPopMatrix();
-}
-
-void DrawBackground(){
-    glPushMatrix();
-        // glColor3f(0.471,0.486,0.486);
-        // glScalef(0.5, 0.5, 0);
-        // DrawCircle(60);
-
-        // glColor3f(0, 0, 0);
-        // glScalef(0.92, 0.92, 0);
-        // DrawCircle(60);
-        float vertex[] = {-1 * xFactor,-1,0, xFactor,-1,0, xFactor,1,0, -1 * xFactor,1,0};
-        DrawSprite(2, vertex);
-        
-
-    glPopMatrix();
-
-    // glColor3f(0.471,0.486,0.486);
-    // glLineWidth(8);
-
-    // glBegin(GL_LINES);
-    //     glVertex2f(0, 1);
-    //     glVertex2f(0, -1);
-    // glEnd();
-
-    // glPushMatrix();
-
-    //     glColor3f(0.471,0.486,0.486);
-    //     glTranslatef(-1 * xFactor, 0, 0);
-    //     glScalef(0.5, 0.5, 0);
-    //     DrawCircle(60);
-
-    //     glColor3f(0, 0, 0);
-    //     glScalef(0.94, 0.94, 0);
-    //     DrawCircle(60);
-
-    // glPopMatrix();
-
-    // glPushMatrix();
-
-    //     glColor3f(0.471,0.486,0.486);
-    //     glTranslatef(xFactor, 0, 0);
-    //     glScalef(0.5, 0.5, 0);
-    //     DrawCircle(60);
-
-    //     glColor3f(0, 0, 0);
-    //     glScalef(0.94, 0.94, 0);
-    //     DrawCircle(60);
-
-    // glPopMatrix();
-}
-
-unsigned int textures[3];
-
-void InitTexture(int id, char * path){
-    int width, height, cnt;
-    unsigned char *data = stbi_load(path, &width, &height, &cnt, 0);
-    
-    glBindTexture(GL_TEXTURE_2D, textures[id]);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, cnt == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(data);
-}
-
-
-
-float texCoords[] = {0,0, 1,0, 1,1, 0,1};
-
-void DrawSprite(unsigned int texture, float vertex[]){
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, textures[texture]);
-    glColor3f(1, 1, 1);
-    glPushMatrix();
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-        glVertexPointer(3, GL_FLOAT, 0, vertex);
-        glTexCoordPointer(2, GL_FLOAT, 0, texCoords);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glPopMatrix();
-}
-
-
-
-
-
-
-
-
 void InitPuck(Puck *obj, float xObj, float yObj, float speedXObj, float speedYObj, float radiusObj){
     obj->x = xObj;
     obj->y = yObj;
@@ -336,13 +54,13 @@ void InitBit(Bit *obj, float xObj, float yObj, float radiusObj){
     obj->radius = radiusObj;
 }
 
-
+unsigned int textures[5];
 
 void GameInit(){
     glGenTextures(2, textures);
 
-    InitTexture(1, "resources/bit.png");
-    InitTexture(2, "resources/table.png");
+    InitTexture(1, "resources/bit.png", textures);
+    InitTexture(2, "resources/table.png", textures);
     InitPuck(&puck, 0, 0, 0, 0, 0.11);
     InitBit(&userBit, -0.4, 0, 0.14);
     InitBit(&user2Bit, 0.4, 0, 0.14);
@@ -351,12 +69,12 @@ void GameInit(){
 
 void DrawFrame(){
     
-    DrawBackground();
+    DrawBackground(xFactor, textures);
 
     glColor3f(1, 0, 0);
-    DrawPuck(puck);
-    DrawBit(userBit);
-    DrawBit(user2Bit);
+    DrawPuck(puck.x, puck.y, puck.radius);
+    DrawBit(userBit.x, userBit.y, userBit.radius, textures);
+    DrawBit(user2Bit.x, user2Bit.y, user2Bit.radius, textures);
 }
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -498,11 +216,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 else{
                     
                     memset(&clientData, 0, sizeof(clientData));
-                    MoveBitTo(&userBit,
+                    MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
                     userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
                   2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
                     recv(clientSocket, clientData, sizeof(clientData), 0);
-                    MoveBitTo(&user2Bit, clientData[0], clientData[1]);
+                    MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
+                     clientData[0], clientData[1]);
                     GetCursorPos(&userPoint);
                     ScreenToClient(hwnd, &userPoint);
                     
@@ -513,7 +232,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     serverData[2] = userBit.x;
                     serverData[3] = userBit.y;
                     send(clientSocket, serverData, sizeof(serverData), 0);
-                    MovePuck(&puck);
+                    MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
                 }
         }
     }

@@ -1,8 +1,6 @@
 #include <math.h>
 #include <windows.h>
-#include "gameobjects.h"
 
-float gravity = 0.0006;
 float reflectionFactor = 0.85;
 float frictionFactor = 0.0001;
 
@@ -10,81 +8,103 @@ BOOL Colision(float x1, float y1, float r, float x2, float y2){
     return pow(x1 - x2, 2) + pow(y1 - y2, 2) < pow(r, 2);
 }
 
-void Repulse(Puck *obj, float x, float y, float speed){
-    float vector = atan2(obj->speedX, obj->speedY);
-    float colosionVector = atan2(obj->x - x, obj->y - y);
+void Repulse(float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float x, float y, float speed){
+    float vector = atan2(*puckSpeedX, *puckSpeedY);
+    float colosionVector = atan2(*puckX - x, *puckY - y);
 
     float angleVector = speed == 0 ? M_PI - vector + 2 * colosionVector : colosionVector;
-    speed = speed == 0 ? sqrt(pow(obj->speedX, 2) + pow(obj->speedY, 2)) : speed;
+    speed = speed == 0 ? sqrt(pow(*puckSpeedX, 2) + pow(*puckSpeedY, 2)) : speed;
 
-    obj->speedX = sin(angleVector) * speed;
-    obj->speedY = cos(angleVector) * speed;
+    *puckSpeedX = sin(angleVector) * speed;
+    *puckSpeedY = cos(angleVector) * speed;
 }
 
-void MoveBitTo(Bit *obj, float x, float y){
-    obj->x = x;
-    obj->y = y;
+void ReflexCursor(HWND hwnd, float glX, float glY, float xFactor, int windowWidth, int windowHeight){
+    POINT cursor;
 
-    if (obj->y < -1 + obj->radius)
-        obj->y = -1 + obj->radius;
+    cursor.x = (glX + xFactor) * (double) windowWidth * 2 * xFactor;
+    cursor.y  = (((glY + 1) / 2 - 1) / -1) * (double) windowHeight;
+    ClientToScreen(hwnd, &cursor);
+    SetCursorPos(cursor.x,cursor.y);
+}
 
-    if (obj->y > 1 - obj->radius)
-        obj->y = 1 - obj->radius;
+void ReflexBit(float *bitX, float *bitY, float *bitRadius, float xFactor, BOOL role){
+    if (*bitY < -1 + *bitRadius)
+        *bitY = -1 + *bitRadius;
 
-    if (obj->x < obj->radius - xFactor)
-        obj->x = obj->radius - xFactor;
+    if (*bitY > 1 - *bitRadius)
+        *bitY = 1 - *bitRadius;
 
-    if (obj->x > xFactor - obj->radius)
-        obj->x = xFactor - obj->radius;
+    if (role == TRUE){
+        if (*bitX < *bitRadius - xFactor)
+            *bitX = *bitRadius - xFactor;
 
-    if (Colision(obj->x, obj->y, obj->radius + puck.radius, puck.x, puck.y)){
-        Repulse(&puck, obj->x, obj->y, 0.09);
+        if (*bitX > 0 - *bitRadius)
+            *bitX = 0 - *bitRadius;
+    }
+    else{
+        if (*bitX < *bitRadius)
+            *bitX = *bitRadius;
+
+        if (*bitX > xFactor - *bitRadius)
+            *bitX = xFactor - *bitRadius;
+    
     }
 }
 
-void MovePuck(Puck *obj){
-    obj->x += obj->speedX;
-    obj->y += obj->speedY;
-    //obj->speedY -= gravity;
-    // Reflect(&obj->dy, &obj->y, (obj->y < -1 + obj->radius), obj->radius - 1);
-    if (obj->y < -1 + obj->radius){
-        obj->speedY *= -reflectionFactor;
-        obj->y = -1 + obj->radius;
+void MoveBitTo(float *bitX, float *bitY, float *bitRadius, float *puckX,
+ float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float x, float y){
+    *bitX = x;
+    *bitY = y;
+
+    if (Colision(*bitX, *bitY, *bitRadius + *puckRadius, *puckX, *puckY)){
+        Repulse(puckX, puckY, puckSpeedX, puckSpeedY, *bitX, *bitY, 0.09);
+    }
+}
+
+void MovePuck(float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float xFactor){
+    *puckX += *puckSpeedX;
+    *puckY += *puckSpeedY;
+    //*puckSpeedY -= gravity;
+    // Reflect(&obj->dy, &*puckY, (*puckY < -1 + *puckRadius), *puckRadius - 1);
+    if (*puckY < -1 + *puckRadius){
+        *puckSpeedY *= -reflectionFactor;
+        *puckY = -1 + *puckRadius;
     }
 
-    if (obj->y > 1 - obj->radius){
-        obj->speedY *= -reflectionFactor;
-        obj->y = 1 - obj->radius;
+    if (*puckY > 1 - *puckRadius){
+        *puckSpeedY *= -reflectionFactor;
+        *puckY = 1 - *puckRadius;
     }
 
 
-    if (obj->x < obj->radius - xFactor){
-        obj->speedX *= -reflectionFactor;
-        obj->x = obj->radius - xFactor;
+    if (*puckX < *puckRadius - xFactor){
+        *puckSpeedX *= -reflectionFactor;
+        *puckX = *puckRadius - xFactor;
     }
 
-    if (obj->x > xFactor - obj->radius){
-        obj->speedX *= -reflectionFactor;
-        obj->x = xFactor - obj->radius;
+    if (*puckX > xFactor - *puckRadius){
+        *puckSpeedX *= -reflectionFactor;
+        *puckX = xFactor - *puckRadius;
     }
 
-    if (obj->speedX > 0)
-        obj->speedX -= frictionFactor;
+    if (*puckSpeedX > 0)
+        *puckSpeedX -= frictionFactor;
 
-    if (obj->speedX < 0)
-        obj->speedX += frictionFactor;
+    if (*puckSpeedX < 0)
+        *puckSpeedX += frictionFactor;
 
-    if (obj->speedY > 0)
-        obj->speedY -= frictionFactor;
+    if (*puckSpeedY > 0)
+        *puckSpeedY -= frictionFactor;
 
-    if (obj->speedY < 0)
-        obj->speedY += frictionFactor;
+    if (*puckSpeedY < 0)
+        *puckSpeedY += frictionFactor;
 
-    if ((obj->speedY <= frictionFactor && obj->speedY > 0) || (obj->speedY >= frictionFactor && obj->speedY < 0))
-        obj->speedY = 0;
+    if ((*puckSpeedY <= frictionFactor && *puckSpeedY > 0) || (*puckSpeedY >= frictionFactor && *puckSpeedY < 0))
+        *puckSpeedY = 0;
 
-    if ((obj->speedX <= frictionFactor && obj->speedX > 0) || (obj->speedX >= frictionFactor && obj->speedX < 0))
-        obj->speedX = 0;
+    if ((*puckSpeedX <= frictionFactor && *puckSpeedX > 0) || (*puckSpeedX >= frictionFactor && *puckSpeedX < 0))
+        *puckSpeedX = 0;
 
 }
 
@@ -95,3 +115,5 @@ void Reflect(float *speed, float *coord, BOOL condition, float wall){
     *speed *= - reflectionFactor;
     *coord = wall;
 }
+
+

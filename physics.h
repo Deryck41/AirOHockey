@@ -1,14 +1,9 @@
-#ifndef CORE_H_INCLUDED
-#define CORE_H_INCLUDED
+#ifndef FILEPHYSICS_H_
+#define FILEPHYSICS_H_
 
-BOOL Colision(float x1, float y1, float r, float x2, float y2);
+void MoveBitTo(float *bitX, float *bitY, float *bitRadius, float *puckX,
+ float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float x, float y);
 
-void Repulse(Puck *obj, float x, float y, float speed);
-
-void MoveBitTo(Bit *obj, float x, float y);
-
-void MovePuck(Puck *obj);
-
-void Reflect(float *speed, float *coord, BOOL condition, float wall);
+void MovePuck(float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float xFactor);
 
 #endif
