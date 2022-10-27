@@ -135,19 +135,19 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         socketSettings.sin_addr.S_un.S_addr = inet_addr(ip);
 
-        if(connect(sock, &socketSettings, sizeof(socketSettings)) != 0)
+        if(connect(sock, (struct sockaddr*)&socketSettings, sizeof(socketSettings)) != 0)
             printf("Error\n\n\n%i", WSAGetLastError());
 
     }
     else{
         role = SERVER;
 
-        bind(sock, &socketSettings, sizeof(socketSettings));
+        bind(sock, (struct sockaddr*)&socketSettings, sizeof(socketSettings));
         listen(sock, 100);
 
         int clientAddresSize = sizeof(clientAddres);
 
-        clientSocket = accept(sock, &clientAddres, &clientAddresSize);
+        clientSocket = accept(sock, (struct sockaddr*)&clientAddres, &clientAddresSize);
         printf("connect OK\n");
     }
 
@@ -200,13 +200,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
             if (role == CLIENT){
                     clientData[0] = user2Bit.x;
                     clientData[1] = user2Bit.y;
-                    send(sock, clientData, sizeof(clientData), 0);
+                    send(sock, (const char *)clientData, sizeof(clientData), 0);
                     GetCursorPos(&userPoint);
                     ScreenToClient(hwnd, &userPoint);
                     user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
                     user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
                     memset(&serverData, 0, sizeof(serverData));
-                    recv(sock, serverData, sizeof(serverData), 0);
+                    recv(sock, (char *)serverData, sizeof(serverData), 0);
                     puck.x = serverData[0];
                     puck.y = serverData[1];
                     userBit.x = serverData[2];
@@ -219,7 +219,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
                     userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
                   2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
-                    recv(clientSocket, clientData, sizeof(clientData), 0);
+                    recv(clientSocket, (char *)clientData, sizeof(clientData), 0);
                     MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
                      clientData[0], clientData[1]);
                     GetCursorPos(&userPoint);
@@ -231,7 +231,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                     serverData[2] = userBit.x;
                     serverData[3] = userBit.y;
-                    send(clientSocket, serverData, sizeof(serverData), 0);
+                    send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
                     MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
                 }
         }
@@ -261,16 +261,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             }
         }
         else
-        {
-
-            
-            
-
-            
-
-
-            
-            
+        {    
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
@@ -307,16 +298,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_DESTROY:
             return 0;
-
-        case WM_KEYDOWN:
-        {
-            switch (wParam)
-            {
-                case VK_ESCAPE:
-                    PostQuitMessage(0);
-                break;
-            }
-        }
         break;
 
         default:
