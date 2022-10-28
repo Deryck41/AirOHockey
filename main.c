@@ -207,6 +207,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             puck.y = serverData[1];
             userBit.x = serverData[2];
             userBit.y = serverData[3];
+            Sleep(5);
         }
 
     }
@@ -222,6 +223,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             serverData[2] = userBit.x;
             serverData[3] = userBit.y;
             send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
+            Sleep(5);
         }
     }
 
