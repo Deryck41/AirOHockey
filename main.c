@@ -106,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = "GLSample";
-    wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);;
+    wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
 
     WSAStartup(MAKEWORD(2, 2), &ws);
@@ -195,54 +195,48 @@ int WINAPI WinMain(HINSTANCE hInstance,
     float clientData[2];
     float serverData[4];
 
-    void *networkBroadcast(){
+
+    void clientNetworkBroadcast(){
         while (TRUE){
-            if (role == CLIENT){
-                    clientData[0] = user2Bit.x;
-                    clientData[1] = user2Bit.y;
-                    send(sock, (const char *)clientData, sizeof(clientData), 0);
-                    GetCursorPos(&userPoint);
-                    ScreenToClient(hwnd, &userPoint);
-                    user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
-                    user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
-                    memset(&serverData, 0, sizeof(serverData));
-                    recv(sock, (char *)serverData, sizeof(serverData), 0);
-                    puck.x = serverData[0];
-                    puck.y = serverData[1];
-                    userBit.x = serverData[2];
-                    userBit.y = serverData[3];
+            clientData[0] = user2Bit.x;
+            clientData[1] = user2Bit.y;
+            send(sock, (const char *)clientData, sizeof(clientData), 0);
+            memset(&serverData, 0, sizeof(serverData));
+            recv(sock, (char *)serverData, sizeof(serverData), 0);
+            puck.x = serverData[0];
+            puck.y = serverData[1];
+            userBit.x = serverData[2];
+            userBit.y = serverData[3];
+        }
 
-                }
-                else{
-                    
-                    memset(&clientData, 0, sizeof(clientData));
-                    MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
-                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
-                  2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
-                    recv(clientSocket, (char *)clientData, sizeof(clientData), 0);
-                    MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
-                     clientData[0], clientData[1]);
-                    GetCursorPos(&userPoint);
-                    ScreenToClient(hwnd, &userPoint);
-                    
-                    serverData[0] = puck.x;
-                    serverData[1] = puck.y;
-                    
+    }
 
-                    serverData[2] = userBit.x;
-                    serverData[3] = userBit.y;
-                    send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
-                    MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
-                }
+    void serverNetworkBroadcast(){
+        while (TRUE){
+            memset(&clientData, 0, sizeof(clientData));
+            recv(clientSocket, (char *)clientData, sizeof(clientData), 0);
+            user2Bit.x = clientData[0];
+            user2Bit.y = clientData[1];
+            serverData[0] = puck.x;
+            serverData[1] = puck.y;
+            serverData[2] = userBit.x;
+            serverData[3] = userBit.y;
+            send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
         }
     }
 
-
     pthread_t thread;
     int statusAddr;
-    int status = pthread_create(&thread, NULL, networkBroadcast, NULL);
+    void (*roleNetworkBroadcast)();
 
-    //pthread_join(thread, (void**)&statusAddr);
+    if (role == CLIENT){
+        roleNetworkBroadcast = clientNetworkBroadcast;
+    }
+    else{
+        roleNetworkBroadcast = serverNetworkBroadcast;
+    }
+
+    int status = pthread_create(&thread, NULL, roleNetworkBroadcast, NULL);
 
     while (!bQuit)
     {
@@ -262,9 +256,29 @@ int WINAPI WinMain(HINSTANCE hInstance,
         }
         else
         {    
+            GetCursorPos(&userPoint);
+            ScreenToClient(hwnd, &userPoint);
+
+            if (role == CLIENT){
+                user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
+                user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
+            }
+            else{
+                MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
+                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+                  2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
+                MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
+                     user2Bit.x, user2Bit.y);
+                MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
+
+            }
+
+
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
+
+
             DrawFrame();
 
             SwapBuffers(hDC);
