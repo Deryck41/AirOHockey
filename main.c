@@ -264,6 +264,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             if (role == CLIENT){
                 user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
                 user2Bit.y = 2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1;
+                ReflexBit(&user2Bit.x, &user2Bit.y, &user2Bit.radius, xFactor, CLIENT);
             }
             else{
                 MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
@@ -272,7 +273,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
                      user2Bit.x, user2Bit.y);
                 MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
-
+                ReflexBit(&userBit.x, &userBit.y, &userBit.radius, xFactor, SERVER);
             }
 
 

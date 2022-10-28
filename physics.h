@@ -6,4 +6,6 @@ void MoveBitTo(float *bitX, float *bitY, float *bitRadius, float *puckX,
 
 void MovePuck(float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float xFactor);
 
+ReflexBit(float *bitX, float *bitY, float *bitRadius, float xFactor, BOOL role);
+
 #endif
