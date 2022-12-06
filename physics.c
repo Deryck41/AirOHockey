@@ -48,25 +48,27 @@ void ReflexBit(float *bitX, float *bitY, float *bitRadius, float xFactor, BOOL r
 
         if (*bitX > xFactor - *bitRadius)
             *bitX = xFactor - *bitRadius;
-    
     }
+
 }
 
-void MoveBitTo(float *bitX, float *bitY, float *bitRadius, float *puckX,
- float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float x, float y){
-    *bitX = x;
-    *bitY = y;
-
+void CheckColision(float *bitX, float *bitY, float *bitRadius, float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius){
     if (Colision(*bitX, *bitY, *bitRadius + *puckRadius, *puckX, *puckY)){
         Repulse(puckX, puckY, puckSpeedX, puckSpeedY, *bitX, *bitY, 0.09);
     }
 }
 
+void MoveBitTo(float *bitX, float *bitY, float x, float y){
+    *bitX = x;
+    *bitY = y;
+
+
+}
+
 void MovePuck(float *puckX, float *puckY, float *puckSpeedX, float *puckSpeedY, float *puckRadius, float xFactor){
     *puckX += *puckSpeedX;
     *puckY += *puckSpeedY;
-    //*puckSpeedY -= gravity;
-    // Reflect(&obj->dy, &*puckY, (*puckY < -1 + *puckRadius), *puckRadius - 1);
+
     if (*puckY < -1 + *puckRadius){
         *puckSpeedY *= -reflectionFactor;
         *puckY = -1 + *puckRadius;
@@ -114,6 +116,19 @@ void Reflect(float *speed, float *coord, BOOL condition, float wall){
 
     *speed *= - reflectionFactor;
     *coord = wall;
+}
+
+short CheckGoal(float xFactor, float yFrom, float yTo, float puckX, float puckY, float puckRadius){
+
+    // 0 - No Goal
+    // 1 - Goal to server
+    // 2 - Goal to client
+
+    if (puckX >= xFactor - puckRadius && puckY >= yFrom && puckY <= yTo)
+        return 1;
+    else if(puckX <= (-1 * xFactor) + puckRadius && puckY >= yFrom && puckY <= yTo)
+        return 2;
+    return 0;
 }
 
 

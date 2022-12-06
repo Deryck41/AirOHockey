@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <gl/gl.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "physics.h"
 #include "drawing.h"
@@ -12,9 +13,12 @@
 
 #define WIN_WIDTH 1200
 #define WIN_HEIGHT 700
-#define PORT 4445
+#define PORT 4446
 #define CLIENT TRUE
 #define SERVER FALSE
+#define YFROM -0.4
+#define YTO 0.4
+
 
 
 WSADATA ws;
@@ -33,10 +37,17 @@ typedef struct{
     float radius;
 } Bit;
 
+typedef struct{
+    unsigned short firstPlayer;
+    unsigned short secondPlayer;
+} Score;
+
 
 Puck puck;
 Bit userBit;
 Bit user2Bit;
+Score score;
+int scoreUpdate;
 
 
 void InitPuck(Puck *obj, float xObj, float yObj, float speedXObj, float speedYObj, float radiusObj){
@@ -57,6 +68,10 @@ void InitBit(Bit *obj, float xObj, float yObj, float radiusObj){
 unsigned int textures[5];
 
 void GameInit(){
+
+    // server - right
+    // client - left
+
     glGenTextures(2, textures);
 
     InitTexture(1, "resources/bit.png", textures);
@@ -64,11 +79,14 @@ void GameInit(){
     InitPuck(&puck, 0, 0, 0, 0, 0.11);
     InitBit(&userBit, -0.4, 0, 0.14);
     InitBit(&user2Bit, 0.4, 0, 0.14);
+    score.firstPlayer = 0;
+    score.secondPlayer = 0;
+    scoreUpdate = 0;
 }
 
 
 void DrawFrame(){
-    
+
     DrawBackground(xFactor, textures);
 
     glColor3f(1, 0, 0);
@@ -174,14 +192,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
     EnableOpenGL(hwnd, &hDC, &hRC);
 
 
-    xFactor = (float) WIN_WIDTH / WIN_HEIGHT;   
+    xFactor = (float) WIN_WIDTH / WIN_HEIGHT;
 
 
     glScalef(1 / xFactor, 1, 1);
     GameInit();
 
     POINT userPoint;
-    Bit *roleBitPointer;
+    Bit *roleBitPointer = NULL;
 
     if (role == CLIENT){
         roleBitPointer = &user2Bit;
@@ -190,7 +208,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         roleBitPointer = &userBit;
     }
 
-    
+
 
     float clientData[2];
     float serverData[4];
@@ -203,6 +221,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
             send(sock, (const char *)clientData, sizeof(clientData), 0);
             memset(&serverData, 0, sizeof(serverData));
             recv(sock, (char *)serverData, sizeof(serverData), 0);
+            recv(sock, (char *) &scoreUpdate, sizeof(int), 0);
+            printf("%i", scoreUpdate);
             puck.x = serverData[0];
             puck.y = serverData[1];
             userBit.x = serverData[2];
@@ -223,12 +243,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
             serverData[2] = userBit.x;
             serverData[3] = userBit.y;
             send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
+            send(clientSocket, (const char *)&scoreUpdate, sizeof(int), 0);
+            printf("%i", scoreUpdate);
             Sleep(5);
         }
     }
 
     pthread_t thread;
-    int statusAddr;
     void (*roleNetworkBroadcast)();
 
     if (role == CLIENT){
@@ -238,7 +259,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         roleNetworkBroadcast = serverNetworkBroadcast;
     }
 
-    int status = pthread_create(&thread, NULL, roleNetworkBroadcast, NULL);
+    pthread_create((pthread_t *restrict)&thread, NULL, roleNetworkBroadcast, NULL);
 
     while (!bQuit)
     {
@@ -257,9 +278,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
             }
         }
         else
-        {    
+        {
             GetCursorPos(&userPoint);
             ScreenToClient(hwnd, &userPoint);
+            //printf(scoreUpdate ? "GOAL\n" : "No\n");
 
             if (role == CLIENT){
                 user2Bit.x = userPoint.x / (double) WIN_WIDTH * 2 * xFactor - xFactor,
@@ -267,19 +289,27 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 ReflexBit(&user2Bit.x, &user2Bit.y, &user2Bit.radius, xFactor, CLIENT);
             }
             else{
-                MoveBitTo(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
-                    userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
+                MoveBitTo(&userBit.x, &userBit.y, userPoint.x / (double) WIN_WIDTH * (xFactor - (-1 * xFactor)) + (-1 * xFactor),
                   2 * (1 - userPoint.y / (double) WIN_HEIGHT) - 1);
-                MoveBitTo(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius,
-                     user2Bit.x, user2Bit.y);
-                MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
                 ReflexBit(&userBit.x, &userBit.y, &userBit.radius, xFactor, SERVER);
+                CheckColision(&userBit.x, &userBit.y, &userBit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius);
+                MoveBitTo(&user2Bit.x, &user2Bit.y, user2Bit.x, user2Bit.y);
+                CheckColision(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius);
+                MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
+                short result = CheckGoal(xFactor, YFROM, YTO, puck.x, puck.y, puck.radius);
+                if (result == 1){
+                    score.firstPlayer++;
+                    scoreUpdate = 1;
+                }
+                else if (result == 2){
+                    score.secondPlayer++;
+                    scoreUpdate = 1;
+                }
             }
 
 
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-            
 
 
             DrawFrame();

@@ -5,7 +5,6 @@
 #include "stb_image.h"
 
 void DrawCircle(int accuracy){
-    float x, y;
     float da = M_PI * 2.0 / accuracy;
 
     glBegin(GL_TRIANGLE_FAN);
@@ -80,7 +79,7 @@ void DrawBackground(float xFactor, unsigned int textures[]){
         // DrawCircle(60);
         float vertex[] = {-1 * xFactor,-1,0, xFactor,-1,0, xFactor,1,0, -1 * xFactor,1,0};
         DrawSprite(2, vertex, textures);
-        
+
 
     glPopMatrix();
 
@@ -124,7 +123,7 @@ void DrawBackground(float xFactor, unsigned int textures[]){
 void InitTexture(int id, char * path, unsigned int textures[]){
     int width, height, cnt;
     unsigned char *data = stbi_load(path, &width, &height, &cnt, 0);
-    
+
     glBindTexture(GL_TEXTURE_2D, textures[id]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -137,5 +136,4 @@ void InitTexture(int id, char * path, unsigned int textures[]){
 
     stbi_image_free(data);
 }
-
 
