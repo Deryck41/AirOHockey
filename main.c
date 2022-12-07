@@ -96,11 +96,15 @@ void DrawFrame(){
     
 }
 
+
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
 
 void DisableOpenGL(HWND, HDC, HGLRC);
+
+BOOL fullScreen = FALSE;
+WINDOWPLACEMENT wpc;
 
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
@@ -357,6 +361,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return 0;
         break;
 
+        case WM_SIZE:
+            {
+                glViewport(0, 0, LOWORD(lParam), HIWORD(lParam));
+            }
+        break;
+        case WM_KEYDOWN:
+            if(wParam == VK_SPACE){
+                if(!fullScreen){
+                    GetWindowPlacement(hwnd,&wpc);//Сохраняем параметры оконного режима
+                    SetWindowLong(hwnd,GWL_STYLE,WS_POPUP);//Устанавливаем новые стили
+                    SetWindowLong(hwnd,GWL_EXSTYLE,WS_EX_TOPMOST);
+                    ShowWindow(hwnd,SW_SHOWMAXIMIZED);//Окно во весь экра
+                    fullScreen = true;
+                }
+                else{
+                    SetWindowLong(hwnd,GWL_STYLE,WS_OVERLAPPEDWINDOW|WS_VISIBLE);//Устанавливаем стили окнного режима
+                    SetWindowLong(hwnd,GWL_EXSTYLE,0L);
+                    SetWindowPlacement(hwnd,&wpc);//Загружаем парметры предыдущего оконного режима
+                    ShowWindow(hwnd,SW_SHOWDEFAULT);//Показываем обычное окно
+                    fullScreen = false;
+                }
+            }
+        break;
         default:
             return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
