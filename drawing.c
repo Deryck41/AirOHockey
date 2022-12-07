@@ -3,6 +3,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "stb_easy_font.h"
 
 void DrawCircle(int accuracy){
     float da = M_PI * 2.0 / accuracy;
@@ -119,7 +120,6 @@ void DrawBackground(float xFactor, unsigned int textures[]){
 }
 
 
-
 void InitTexture(int id, char * path, unsigned int textures[]){
     int width, height, cnt;
     unsigned char *data = stbi_load(path, &width, &height, &cnt, 0);
@@ -137,3 +137,44 @@ void InitTexture(int id, char * path, unsigned int textures[]){
     stbi_image_free(data);
 }
 
+void PrintString(float x, float y, char *text, float r, float g, float b){
+    static char buffer[99999]; // ~500 chars
+    int num_quads;
+
+    num_quads = stb_easy_font_print(x, y, text, NULL, buffer, sizeof(buffer));
+
+    glColor3f(r,g,b);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 16, buffer);
+    glDrawArrays(GL_QUADS, 0, num_quads*4);
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+void DrawScore(int first, int second){
+    char firstScore[8];
+    sprintf(firstScore, "%d", first);
+
+    char secondScore[8];
+    sprintf(secondScore, "%d", second);
+
+    glPushMatrix();
+        glTranslatef(-1.0 * (stb_easy_font_width(firstScore)/60.0), 0.9, 0);
+        glScalef(0.015, -0.015, 1);
+        
+        PrintString(0, 0, firstScore, 1, 0, 0);
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslatef(-1.0 * (stb_easy_font_width(":")/330.0), 0.9, 0);
+        glScalef(0.015, -0.015, 1);
+        
+        PrintString(0, 0, ":", 1, 0, 0);
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslatef((stb_easy_font_width(secondScore)/150.0), 0.9, 0);
+        glScalef(0.015, -0.015, 1);
+        
+        PrintString(0, 0, secondScore, 1, 0, 0);
+    glPopMatrix();
+}

@@ -47,7 +47,6 @@ Puck puck;
 Bit userBit;
 Bit user2Bit;
 Score score;
-int scoreUpdate;
 
 
 void InitPuck(Puck *obj, float xObj, float yObj, float speedXObj, float speedYObj, float radiusObj){
@@ -81,7 +80,6 @@ void GameInit(){
     InitBit(&user2Bit, 0.4, 0, 0.14);
     score.firstPlayer = 0;
     score.secondPlayer = 0;
-    scoreUpdate = 0;
 }
 
 
@@ -90,9 +88,12 @@ void DrawFrame(){
     DrawBackground(xFactor, textures);
 
     glColor3f(1, 0, 0);
+    DrawScore(score.firstPlayer, score.secondPlayer);
     DrawPuck(puck.x, puck.y, puck.radius);
     DrawBit(userBit.x, userBit.y, userBit.radius, textures);
     DrawBit(user2Bit.x, user2Bit.y, user2Bit.radius, textures);
+
+    
 }
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -123,7 +124,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = "GLSample";
+    wcex.lpszClassName = "AirOHockey";
     wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
 
@@ -176,8 +177,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     /* create main window */
     hwnd = CreateWindowEx(0,
-                          "GLSample",
-                          "AeroHockey",
+                          "AirOHockey",
+                          "AirOHockey",
                           WS_OVERLAPPEDWINDOW,
                           CW_USEDEFAULT,
                           CW_USEDEFAULT,
@@ -221,12 +222,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
             send(sock, (const char *)clientData, sizeof(clientData), 0);
             memset(&serverData, 0, sizeof(serverData));
             recv(sock, (char *)serverData, sizeof(serverData), 0);
-            recv(sock, (char *) &scoreUpdate, sizeof(int), 0);
-            printf("%i", scoreUpdate);
+            int recvScoreFirst, recvScoreSecond;
+            recv(sock, (char *) &recvScoreFirst, sizeof(int), 0);
+            recv(sock, (char *) &recvScoreSecond, sizeof(int), 0);
+            score.firstPlayer = recvScoreFirst;
+            score.secondPlayer = recvScoreSecond;
             puck.x = serverData[0];
             puck.y = serverData[1];
             userBit.x = serverData[2];
             userBit.y = serverData[3];
+
+            
+
             Sleep(5);
         }
 
@@ -243,8 +250,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
             serverData[2] = userBit.x;
             serverData[3] = userBit.y;
             send(clientSocket, (const char *)serverData, sizeof(serverData), 0);
-            send(clientSocket, (const char *)&scoreUpdate, sizeof(int), 0);
-            printf("%i", scoreUpdate);
+            int sendScoreFirst = score.firstPlayer, sendScoreSecond = score.secondPlayer;
+            send(clientSocket, (const char *)&sendScoreFirst, sizeof(int), 0);
+            send(clientSocket, (const char *)&sendScoreSecond, sizeof(int), 0);
+
+
+
             Sleep(5);
         }
     }
@@ -279,6 +290,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         }
         else
         {
+            
             GetCursorPos(&userPoint);
             ScreenToClient(hwnd, &userPoint);
             //printf(scoreUpdate ? "GOAL\n" : "No\n");
@@ -297,14 +309,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 CheckColision(&user2Bit.x, &user2Bit.y, &user2Bit.radius, &puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius);
                 MovePuck(&puck.x, &puck.y, &puck.speedX, &puck.speedY, &puck.radius, xFactor);
                 short result = CheckGoal(xFactor, YFROM, YTO, puck.x, puck.y, puck.radius);
-                if (result == 1){
+                if (result == 1)
                     score.firstPlayer++;
-                    scoreUpdate = 1;
-                }
-                else if (result == 2){
+
+                else if (result == 2)
                     score.secondPlayer++;
-                    scoreUpdate = 1;
-                }
             }
 
 
@@ -317,6 +326,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
             SwapBuffers(hDC);
 
             Sleep (5);
+                
         }
     }
 
